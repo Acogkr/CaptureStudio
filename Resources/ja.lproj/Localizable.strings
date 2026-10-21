@@ -200,3 +200,13 @@
 "Your edits will be lost if you don't save them." = "保存しないと編集内容が失われます。";
 "{0} Days" = "{0}日";
 "Could not restart Capture Studio. Your edits are saved. Reopen the app to continue." = "Capture Studioを再起動できませんでした。編集内容は保存されています。アプリを開き直してください。";
+
+"Launch at Login" = "ログイン時に起動";
+
+"Start in the menu bar at login, ready for capture shortcuts without opening the editor." = "ログイン時に編集画面を開かずメニューバーに常駐し、キャプチャのショートカットをすぐに使えます。";
+
+"Allow Capture Studio in Login Items to enable automatic startup." = "ログイン項目でCapture Studioを許可すると、自動的に起動します。";
+
+"Open Login Items" = "ログイン項目を開く";
+
+"Could not change launch at login. {0}" = "ログイン時の起動設定を変更できませんでした。{0}";

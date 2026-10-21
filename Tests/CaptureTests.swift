@@ -28,9 +28,19 @@ func runCaptureTests() throws -> Int {
     try ImageRenderer.png(DemoImage.make()).write(to: fixture)
     let pasteboard = NSPasteboard(name: .init("CaptureProcessTests-" + UUID().uuidString))
     defer { pasteboard.releaseGlobally() }
+    let previousPolicy = NSApp.activationPolicy()
+    defer { NSApp.setActivationPolicy(previousPolicy) }
     func run(_ mode: CaptureMode, script: String, status: String, revoke: Bool = false, duplicate: Bool = false) throws {
         pasteboard.clearContents(); pasteboard.setString("Keep previous clipboard", forType: .string)
         let model = EditorModel(clipboard: ImageClipboard(pasteboard: pasteboard))
+        let editor = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 300, height: 200),
+            styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        editor.isReleasedWhenClosed = false
+        defer { editor.orderOut(nil) }
+        model.window = editor
+        let delegate = AppDelegate(model: model)
+        delegate.window = editor
+        delegate.prepareForCapture()
         let previous = model.state.id
         var access = true, permissions = 0, previews = 0, processes = 0
         var temporaryOutput: URL?
@@ -43,6 +53,7 @@ func runCaptureTests() throws -> Int {
                 return process
             })
         service.needsPermission = { permissions += 1 }
+        service.willCapture = { delegate.prepareForCapture() }
         service.didCapture = { _, _ in previews += 1 }
         service.start(mode, model: model)
         if duplicate { service.start(mode, model: model) }
@@ -55,11 +66,20 @@ func runCaptureTests() throws -> Int {
         if status == "success" {
             check(model.state.id != previous && previews == 1 && model.error == nil && pasteboard.data(forType: .png) != nil,
                 "Successful capture publishes its preview and clipboard once")
+            check(!editor.isVisible && NSApp.activationPolicy() == .accessory,
+                "Successful background capture keeps the editor and Dock hidden")
         } else {
             check(model.state.id == previous && previews == 0 && pasteboard.string(forType: .string) == "Keep previous clipboard",
                 "Failed/cancelled capture preserves image and clipboard: \(status)")
             check((model.error != nil) == (status == "failure") && (model.showPermission && permissions == 1) == (status == "permission"),
                 "Capture reports the correct result: \(status)")
+            if status == "cancelled" {
+                check(!editor.isVisible && NSApp.activationPolicy() == .accessory,
+                    "Cancelling a background capture leaves the Dock hidden")
+            } else {
+                check(editor.isVisible && NSApp.activationPolicy() == .regular,
+                    "Capture errors and missing permission reopen an accessible editor")
+            }
         }
     }
     try run(.screen, script: "exit 0", status: "failure")

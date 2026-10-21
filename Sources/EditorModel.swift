@@ -299,6 +299,7 @@ final class EditorModel: ObservableObject {
         finishTextEditing()
         if history != nil { if flushHistory() { action() }; return }
         guard dirty, let window else { action(); return }
+        NSApp.setActivationPolicy(.regular)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()

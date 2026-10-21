@@ -31,6 +31,7 @@ struct ArchiveSettingsView: View {
     @ObservedObject var model: EditorModel
     @ObservedObject var updates: UpdateChecker
     @ObservedObject var shortcuts: CaptureShortcuts
+    @ObservedObject var loginItem: LoginItem
     let chooseFolder: () -> Void
 
     private var folder: URL? { model.history?.root }
@@ -42,6 +43,8 @@ struct ArchiveSettingsView: View {
     var body: some View {
         ScrollView {
         VStack(alignment: .leading, spacing: 20) {
+            LoginItemSettingsView(loginItem: loginItem)
+            Divider()
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text(L("Language")).font(.system(size: 13, weight: .semibold))

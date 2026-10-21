@@ -94,6 +94,7 @@ func runTests() {
         count += try runUpdateTests()
         count += try runLocalizationTests()
         count += try runWindowTests()
+        count += try runLoginItemTests()
         print("\(count) checks passed: editing, archive retention and migration, clipboard, capture permissions, global shortcut, updates and localization.")
     } catch { fputs("FAIL: \(error)\n", stderr); exit(1) }
 }

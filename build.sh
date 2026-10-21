@@ -34,7 +34,7 @@ for CAPTURE_ARCH in $CAPTURE_ARCHS; do
   [[ "$CAPTURE_ARCH" == arm64 || "$CAPTURE_ARCH" == x86_64 ]] || { echo 'Unsupported architecture.' >&2; exit 1; }
   CAPTURE_BINARY="$CAPTURE_STAGE/CaptureStudio-$CAPTURE_ARCH"
   xcrun swiftc -swift-version 5 -O -parse-as-library -target "$CAPTURE_ARCH-apple-macosx14.0" \
-    "$CAPTURE_ROOT"/Sources/*.swift -framework AppKit -framework SwiftUI -framework UniformTypeIdentifiers -framework Carbon \
+    "$CAPTURE_ROOT"/Sources/*.swift -framework AppKit -framework SwiftUI -framework UniformTypeIdentifiers -framework Carbon -framework ServiceManagement \
     -o "$CAPTURE_BINARY"
   CAPTURE_BINARIES+=("$CAPTURE_BINARY")
 done

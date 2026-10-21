@@ -7,7 +7,8 @@ A Mac app for capturing, marking up, and pasting images.
 ## Features
 
 - Area, window, and full-screen capture with configurable global shortcuts
-- Automatic clipboard copy and a thumbnail that opens the editor
+- Optional launch at login, quietly in the menu bar
+- Capture and copy without a Dock icon; click the thumbnail to edit
 - Arrows, rectangles, text, redaction, and cropping
 - Automatic copy after edits, with undo and redo
 - Open, drop, or paste images and export PNG files

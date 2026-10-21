@@ -200,3 +200,13 @@
 "Your edits will be lost if you don't save them." = "如果不保存，当前编辑内容将丢失。";
 "{0} Days" = "{0} 天";
 "Could not restart Capture Studio. Your edits are saved. Reopen the app to continue." = "无法重新启动 Capture Studio。编辑内容已保存，请重新打开应用。";
+
+"Launch at Login" = "登录时启动";
+
+"Start in the menu bar at login, ready for capture shortcuts without opening the editor." = "登录时在菜单栏中启动，无需打开编辑器即可使用截图快捷键。";
+
+"Allow Capture Studio in Login Items to enable automatic startup." = "在登录项中允许Capture Studio即可自动启动。";
+
+"Open Login Items" = "打开登录项";
+
+"Could not change launch at login. {0}" = "无法更改登录时启动设置。{0}";

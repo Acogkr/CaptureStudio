@@ -200,3 +200,13 @@
 "Your edits will be lost if you don't save them." = "Your edits will be lost if you don't save them.";
 "{0} Days" = "{0} Days";
 "Could not restart Capture Studio. Your edits are saved. Reopen the app to continue." = "Could not restart Capture Studio. Your edits are saved. Reopen the app to continue.";
+
+"Launch at Login" = "Launch at Login";
+
+"Start in the menu bar at login, ready for capture shortcuts without opening the editor." = "Start in the menu bar at login, ready for capture shortcuts without opening the editor.";
+
+"Allow Capture Studio in Login Items to enable automatic startup." = "Allow Capture Studio in Login Items to enable automatic startup.";
+
+"Open Login Items" = "Open Login Items";
+
+"Could not change launch at login. {0}" = "Could not change launch at login. {0}";

@@ -20,6 +20,6 @@ for CAPTURE_LANGUAGE in en ko ja zh-Hans; do
 done
 xcrun swiftc -swift-version 5 -D CAPTURE_TESTING -parse-as-library \
   "$CAPTURE_ROOT"/Sources/*.swift "$CAPTURE_ROOT"/Tests/*.swift \
-  -framework AppKit -framework SwiftUI -framework UniformTypeIdentifiers -framework Carbon \
+  -framework AppKit -framework SwiftUI -framework UniformTypeIdentifiers -framework Carbon -framework ServiceManagement \
   -o "$CAPTURE_TEST_APP/Contents/MacOS/CaptureTests"
 "$CAPTURE_TEST_APP/Contents/MacOS/CaptureTests" --test

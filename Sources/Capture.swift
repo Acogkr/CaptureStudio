@@ -90,13 +90,14 @@ final class CaptureService {
         do { try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700]) }
         catch { model.error = error.localizedDescription; showEditor(model); return }
         let output = directory.appendingPathComponent("capture.png")
-        let restoreEditorOnCancel = NSApp.isActive && model.window?.isVisible == true && model.window?.isMiniaturized == false
+        let wasActive = NSApp.isActive
+        let restoreEditorOnCancel = wasActive && model.window?.isVisible == true && model.window?.isMiniaturized == false
         let front = NSWorkspace.shared.frontmostApplication
         let returnTo = front?.processIdentifier == ProcessInfo.processInfo.processIdentifier ? lastExternalApplication : front
         willCapture?()
         model.isCapturing = true
         model.window?.orderOut(nil)
-        if NSApp.isActive, let returnTo, !returnTo.isTerminated,
+        if wasActive, let returnTo, !returnTo.isTerminated,
            returnTo.processIdentifier != ProcessInfo.processInfo.processIdentifier {
             NSApp.yieldActivation(to: returnTo)
             returnTo.activate(options: [])
@@ -149,6 +150,7 @@ final class CaptureService {
         }
     }
     private func showEditor(_ model: EditorModel) {
+        NSApp.setActivationPolicy(.regular)
         model.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

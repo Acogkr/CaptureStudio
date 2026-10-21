@@ -49,7 +49,9 @@ enum CaptureStudioApp {
             let alert = NSAlert(); alert.messageText = L("Unable to Complete")
             alert.informativeText = error.localizedDescription; alert.runModal(); return
         }
-        app.setActivationPolicy(.regular)
+        // The initial Apple event is available in applicationDidFinishLaunching.
+        // Stay out of the Dock until we know whether this is a login launch.
+        app.setActivationPolicy(.accessory)
         let delegate = AppDelegate()
         app.delegate = delegate
         withExtendedLifetime((session, delegate)) { app.run() }
@@ -63,6 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     let updates: UpdateChecker
     let capturePreview = CapturePreviewController()
     let shortcuts: CaptureShortcuts
+    let loginItem = LoginItem()
     var window: NSWindow!
     var statusItem: NSStatusItem?
     var settingsWindow: NSWindow?
@@ -84,6 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         super.init()
     }
     func applicationDidBecomeActive(_ notification: Notification) {
+        loginItem.refresh()
         captureService.refreshPermission(model: model)
         Task { @MainActor [weak self] in await self?.permissionRecovery.check() }
         updates.check()
@@ -98,9 +102,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         if (notification.object as? NSWindow) === settingsWindow { shortcuts.cancelRecording() }
     }
     func windowWillClose(_ notification: Notification) {
-        if (notification.object as? NSWindow) === settingsWindow { model.settingsWindowActive = false }
+        guard let closedWindow = notification.object as? NSWindow else { return }
+        if closedWindow === settingsWindow { model.settingsWindowActive = false }
+        guard closedWindow === window || closedWindow === settingsWindow else { return }
+        // willClose arrives before isVisible changes. Thumbnails do not keep a Dock icon.
+        let hasOpenWindow = [window, settingsWindow].compactMap { $0 }
+            .contains { $0 !== closedWindow && ($0.isVisible || $0.isMiniaturized) }
+        if !hasOpenWindow { NSApp.setActivationPolicy(.accessory) }
     }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let launchedAtLogin = LoginItem.isLoginLaunch(NSAppleEventManager.shared().currentAppleEvent)
         captureService.needsPermission = { [weak self] in self?.permissionRecovery.begin() }
         captureService.lastExternalApplication = NSWorkspace.shared.frontmostApplication
         workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] notification in
@@ -113,10 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
                 self?.captureService.lastExternalApplication = app
             }
         }
-        captureService.willCapture = { [weak self] in
-            self?.capturePreview.dismiss()
-            self?.settingsWindow?.orderOut(nil)
-        }
+        captureService.willCapture = { [weak self] in self?.prepareForCapture() }
         captureService.didCapture = { [weak self] image, screen in
             self?.capturePreview.show(image, screen: screen) { [weak self] in self?.showEditor() }
         }
@@ -138,8 +147,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             guard let self else { return }; self.captureService.start(mode, model: self.model)
         })
         window.center()
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        presentInitialWindow(inBackground: launchedAtLogin && pendingURLs == nil)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem?.button?.image = NSImage(systemSymbolName: "viewfinder", accessibilityDescription: "Capture Studio")
         buildStatusMenu()
@@ -169,6 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         menu.addItem(captureMenuItem(.screen, #selector(captureScreen)))
         menu.addItem(.separator())
         menu.addItem(item(L("Open Editor"), #selector(showEditor)))
+        menu.addItem(item(L("Settings…"), #selector(showSettings)))
         menu.addItem(item(updates.actionTitle, #selector(checkForUpdates)))
         menu.addItem(item(L("Quit Capture Studio"), #selector(quit)))
         statusItem?.menu = menu
@@ -321,11 +330,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         shortcuts.cancelRecording()
         capturePreview.dismiss()
         model.settingsWindowActive = false
+        NSApp.setActivationPolicy(.regular)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
+    func prepareForCapture() {
+        capturePreview.dismiss()
+        settingsWindow?.orderOut(nil)
+        window?.orderOut(nil)
+        model.settingsWindowActive = false
+        NSApp.setActivationPolicy(.accessory)
+    }
     @objc func showSettings() {
         guard canHandleActions else { return }
+        loginItem.refresh()
         model.finishTextEditing()
         model.showHistory = false
         if settingsWindow == nil {
@@ -334,7 +352,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             panel.title = L("Settings")
             panel.isReleasedWhenClosed = false
             panel.delegate = self
-            panel.contentView = NSHostingView(rootView: ArchiveSettingsView(model: model, updates: updates, shortcuts: shortcuts) { [weak self] in
+            panel.contentView = NSHostingView(rootView: ArchiveSettingsView(model: model, updates: updates, shortcuts: shortcuts, loginItem: loginItem) { [weak self] in
                 guard let self, let panel = self.settingsWindow else { return }
                 self.model.chooseArchiveFolder(in: panel)
             })
@@ -343,6 +361,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         }
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+    func presentInitialWindow(inBackground: Bool) {
+        if inBackground {
+            NSApp.setActivationPolicy(.accessory)
+        } else {
+            NSApp.setActivationPolicy(.regular)
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
     @objc func captureArea() { guard canHandleActions else { return }; captureService.start(.area, model: model) }
     @objc func checkForUpdates() {
